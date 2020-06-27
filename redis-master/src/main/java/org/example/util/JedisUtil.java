@@ -9,8 +9,9 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Redis 连接池工具类
+ * Redis 连接池工具类,不使用 RedisTemplate
  * @author chenj
+ * @see Jedis
  */
 public final class JedisUtil {
 
