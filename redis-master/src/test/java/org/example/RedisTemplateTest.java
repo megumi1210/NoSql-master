@@ -9,12 +9,13 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import redis.clients.jedis.Jedis;
+import sun.plugin2.jvm.RemoteJVMLauncher;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("all")
 public class RedisTemplateTest {
@@ -172,75 +173,124 @@ public class RedisTemplateTest {
     System.out.println(value);
   }
 
-
-    /**
-     *  事务测试2
-     */
+  /** 事务测试2 */
   @Test
-  public void test08(){
-      stringToStringRedisTemplate.getConnectionFactory().getConnection().flushDb();
-      stringToStringRedisTemplate.opsForValue().set("key1","value1");
-      //使用乐观锁监控,只是针对多线程安全有效，比如多个客户端对数据同时修改
-      stringToStringRedisTemplate.watch("key1");
+  public void test08() {
+    stringToStringRedisTemplate.getConnectionFactory().getConnection().flushDb();
+    stringToStringRedisTemplate.opsForValue().set("key1", "value1");
+    // 使用乐观锁监控,只是针对多线程安全有效，比如多个客户端对数据同时修改
+    stringToStringRedisTemplate.watch("key1");
 
-      SessionCallback callback = new SessionCallback() {
+    SessionCallback callback =
+        new SessionCallback() {
           @Override
           public Object execute(RedisOperations ops) throws DataAccessException {
-                ops.multi();
+            ops.multi();
 
-                stringToStringRedisTemplate.opsForValue().set("key1","value2");
-                ops.boundValueOps("key2").set("value2");
+            stringToStringRedisTemplate.opsForValue().set("key1", "value2");
+            ops.boundValueOps("key2").set("value2");
 
-                ops.exec();
+            ops.exec();
 
-                String result = (String) stringToStringRedisTemplate.opsForValue().get("key2");
-                System.out.println(result);
-                return  result;
+            String result = (String) stringToStringRedisTemplate.opsForValue().get("key2");
+            System.out.println(result);
+            return result;
           }
-      };
+        };
 
-      stringToStringRedisTemplate.execute(callback);
-      System.out.println(stringToStringRedisTemplate.opsForValue().get("key1"));
-
+    stringToStringRedisTemplate.execute(callback);
+    System.out.println(stringToStringRedisTemplate.opsForValue().get("key1"));
   }
 
-
-    /**
-     *  Spring 中使用流水线 pipeline
-     */
+  /** Spring 中使用流水线 pipeline */
   @Test
-  public void test09(){
-      jedis.flushDB();
-      SessionCallback callback = new SessionCallback() {
+  public void test09() {
+    // 清空之前的数据
+    jedis.flushDB();
+    SessionCallback callback =
+        new SessionCallback() {
           @Override
           public Object execute(RedisOperations ops) throws DataAccessException {
-              for(int i = 0 ; i< 100000 ;i++){
-                  int j = i+1;
-                  ops.boundValueOps("pipeline_key_"+j).set("pipeline_value_"+j);
-                  ops.boundValueOps("pipeline_key_"+j).get();
-              }
-              return  null;
+            for (int i = 0; i < 100000; i++) {
+              int j = i + 1;
+              ops.boundValueOps("pipeline_key_" + j).set("pipeline_value_" + j);
+              ops.boundValueOps("pipeline_key_" + j).get();
+            }
+            return null;
           }
-      };
+        };
 
-      long start  =System.currentTimeMillis();
-      stringToStringRedisTemplate.executePipelined(callback);
-      long end = System.currentTimeMillis();
+    long start = System.currentTimeMillis();
+    stringToStringRedisTemplate.executePipelined(callback);
+    long end = System.currentTimeMillis();
 
-    System.out.println("耗时："+ (end -start) +"毫秒");
+    System.out.println("耗时：" + (end - start) + "毫秒");
   }
 
-
-    /**
-     *  发布订阅配置
-     */
+  /** 发布订阅测试 */
   @Test
-  public void test10(){
-      String channel = "chat";
-      stringToStringRedisTemplate.convertAndSend(channel,"hello");
+  public void test10() {
+    String channel = "chat";
+    stringToStringRedisTemplate.convertAndSend(channel, "hello");
 
-      //先打开客户端  执行 subscribe chat ，在运行此代码会受到消息
+    // 先打开客户端  执行 subscribe chat ，在运行此代码会受到消息
+  }
+
+  /** 测试超时时间设置 */
+  @Test
+  public void test11() {
+    jedis.flushDB();
+    stringToStringRedisTemplate.execute(
+        new SessionCallback() {
+          @Override
+          public Object execute(RedisOperations ops) throws DataAccessException {
+            ops.boundValueOps("key1").set("value1");
+            // 设置超时时间为30秒
+            ops.expire("key1", 30, TimeUnit.SECONDS);
+
+            Long expSecond = ops.getExpire("key1");
+            System.out.println(expSecond);
+
+            ops.boundValueOps("key2").set("value2");
+            Date date = new Date();
+            Long now = System.currentTimeMillis();
+            date.setTime(now + 30000);
+            // 设置当前时间过 30 秒后超时
+            ops.expireAt("key2", date);
+            return null;
+          }
+        });
+
   }
 
 
+  /**
+   *  测试Lua脚本的使用
+   */
+  @Test
+  public void test12(){
+    jedis.flushDB();
+    //定义默认的脚本封装类
+    DefaultRedisScript<Role> redisScript = new DefaultRedisScript<>();
+    //设置脚本
+    redisScript.setScriptText("redis.call('set',KEYS[1],ARGV[1]) return redis.call('get',KEYS[1])");
+    //设置返回结果类型，如果没有这句话，结果返回空
+    redisScript.setResultType(Role.class);
+    //定义操作的key 列表
+    List<String> keyList = new ArrayList<>();
+    keyList.add("role1");
+    //获取标识字符串
+    String sha1 = redisScript.getSha1();
+    System.out.println(sha1);
+
+    //定义序列化器
+    JdkSerializationRedisSerializer serializer = new JdkSerializationRedisSerializer();
+
+    //执行脚本
+    //第一个是 RedisScript 接口对象， 第二个是参数序列化器
+    //第三个是结果序列化器，第四个是 key 列表，最后是参数列表
+    Role  result = (Role) stringToJdkRedisTemplate.execute(redisScript,keyList,data);
+    // 打印结果
+    System.out.println(result);
+  }
 }

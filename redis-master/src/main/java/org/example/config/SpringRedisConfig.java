@@ -48,7 +48,7 @@ public class SpringRedisConfig {
 
     /**
      *  redis 连接工厂的配置
-     * @return l连接工厂
+     * @return 连接工厂
      */
     @Bean
     JedisConnectionFactory  connectionFactory(){
