@@ -1,4 +1,4 @@
-package org.example.pojo;
+package org.example.domain;
 
 import java.io.Serializable;
 

@@ -1,13 +1,23 @@
 package org.example.config;
 
+import org.example.domain.RedisMessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.Topic;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import redis.clients.jedis.JedisPoolConfig;
+
+import java.util.*;
 
 /**
  * 使用 spring 对redis的封装
@@ -16,6 +26,7 @@ import redis.clients.jedis.JedisPoolConfig;
  */
 
 @Configuration
+@SuppressWarnings("all")
 public class SpringRedisConfig {
 
     @Autowired
@@ -71,7 +82,6 @@ public class SpringRedisConfig {
      * @return string -> jdk对象 键值对序列化的 redisTemplate
      */
     @Bean(name="stringToJdkRedisTemplate")
-    @SuppressWarnings("all")
     RedisTemplate  stringToJdkRedisTemplate(){
          RedisTemplate redisTemplate = new RedisTemplate();
          redisTemplate.setConnectionFactory(connectionFactory());
@@ -85,7 +95,6 @@ public class SpringRedisConfig {
      * @return  string -> string 键值对序列化的 redisTemplate
      */
     @Bean(name="stringToStringRedisTemplate")
-    @SuppressWarnings("all")
     RedisTemplate  stringToStringRedisTemplate(){
         RedisTemplate redisTemplate = new RedisTemplate();
         redisTemplate.setConnectionFactory(connectionFactory());
@@ -93,4 +102,57 @@ public class SpringRedisConfig {
         redisTemplate.setValueSerializer(stringRedisSerializer());
         return  redisTemplate;
     }
+
+    /**
+     *  发布订阅的消息监听容器类配置
+     */
+    @Bean
+    RedisMessageListenerContainer messageListenerContainer(){
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory());
+
+        ThreadPoolTaskScheduler taskExecutor= new ThreadPoolTaskScheduler();
+        taskExecutor.setPoolSize(3);
+        taskExecutor.initialize();
+        container.setTaskExecutor(taskExecutor);
+
+
+        Map<MessageListener, Collection<? extends Topic>> map = new HashMap<>(8);
+        List<Topic> topics = new ArrayList<>();
+        topics.add(new ChannelTopic("chat"));
+
+         MessageListener messageListener = messageListener();
+
+        map.put(messageListener,topics);
+        container.setMessageListeners(map);
+        return  container;
+    }
+
+    /**
+     *  消息监听器的配置
+     * @return 消息监听器
+     */
+    @Bean
+    MessageListener messageListener(){
+        RedisMessageListener messageListener = new RedisMessageListener();
+        messageListener.setRedisTemplate(stringToStringRedisTemplate());
+        return  messageListener;
+    }
+
+
+    /**
+     * 配置线程池
+     * @return 线程池
+     */
+    //@Bean
+    TaskExecutor taskExecutor(){
+        ThreadPoolTaskScheduler taskExecutor= new ThreadPoolTaskScheduler();
+        taskExecutor.setPoolSize(3);
+        taskExecutor.initialize();
+        return  taskExecutor;
+    }
+
+
+
+
 }
