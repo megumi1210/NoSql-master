@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -66,9 +65,14 @@ public class SpringRedisConfig {
         return  new StringRedisSerializer();
     }
 
-    @Bean
+
+    /**
+     *
+     * @return string -> jdk对象 键值对序列化的 redisTemplate
+     */
+    @Bean(name="stringToJdkRedisTemplate")
     @SuppressWarnings("all")
-    RedisTemplate  redisTemplate(){
+    RedisTemplate  stringToJdkRedisTemplate(){
          RedisTemplate redisTemplate = new RedisTemplate();
          redisTemplate.setConnectionFactory(connectionFactory());
          redisTemplate.setKeySerializer(stringRedisSerializer());
@@ -76,4 +80,17 @@ public class SpringRedisConfig {
          return  redisTemplate;
     }
 
+
+    /**
+     * @return  string -> string 键值对序列化的 redisTemplate
+     */
+    @Bean(name="stringToStringRedisTemplate")
+    @SuppressWarnings("all")
+    RedisTemplate  stringToStringRedisTemplate(){
+        RedisTemplate redisTemplate = new RedisTemplate();
+        redisTemplate.setConnectionFactory(connectionFactory());
+        redisTemplate.setKeySerializer(stringRedisSerializer());
+        redisTemplate.setValueSerializer(stringRedisSerializer());
+        return  redisTemplate;
+    }
 }
