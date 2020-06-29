@@ -2,6 +2,7 @@ package org.example;
 
 import org.example.config.RootConfig;
 import org.example.domain.Role;
+import org.example.service.RedisTemplateService;
 import org.example.service.RoleService;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -27,5 +28,16 @@ public class CacheTest {
         Role role = roleService.getRole(data.getId());
         role.setNote("role_note_1_update");
         roleService.updateRole(role);
+    }
+
+    /**
+     *  redis 服务接口测试
+     */
+    @Test
+    public void test02(){
+        RedisTemplateService service = cxt.getBean(RedisTemplateService.class);
+        service.execMultiCommand();
+        service.execTransaction();
+        service.execPipeline();
     }
 }
