@@ -12,7 +12,7 @@ import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import redis.clients.jedis.Jedis;
-import sun.plugin2.jvm.RemoteJVMLauncher;
+
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;

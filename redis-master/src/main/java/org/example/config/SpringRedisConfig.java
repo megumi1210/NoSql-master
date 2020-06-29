@@ -2,9 +2,12 @@ package org.example.config;
 
 import org.example.domain.RedisMessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,7 +16,6 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.Topic;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -26,6 +28,8 @@ import java.util.*;
  */
 
 @Configuration
+//开启缓存
+@EnableCaching
 @SuppressWarnings("all")
 public class SpringRedisConfig {
 
@@ -111,10 +115,7 @@ public class SpringRedisConfig {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory());
 
-        ThreadPoolTaskScheduler taskExecutor= new ThreadPoolTaskScheduler();
-        taskExecutor.setPoolSize(3);
-        taskExecutor.initialize();
-        container.setTaskExecutor(taskExecutor);
+        container.setTaskExecutor(taskExecutor());
 
 
         Map<MessageListener, Collection<? extends Topic>> map = new HashMap<>(8);
@@ -144,7 +145,7 @@ public class SpringRedisConfig {
      * 配置线程池
      * @return 线程池
      */
-    //@Bean
+    @Bean
     TaskExecutor taskExecutor(){
         ThreadPoolTaskScheduler taskExecutor= new ThreadPoolTaskScheduler();
         taskExecutor.setPoolSize(3);
@@ -152,6 +153,18 @@ public class SpringRedisConfig {
         return  taskExecutor;
     }
 
+
+    @Bean(name ="redisCacheManager")
+    CacheManager cacheManager(){
+        RedisCacheManager cacheManager = new RedisCacheManager(stringToJdkRedisTemplate());
+        //设置超时时间为 10 分钟，单位为秒
+        cacheManager.setDefaultExpiration(600);
+        //设置缓存名称
+        List<String> cacheNames = new ArrayList<>();
+        cacheNames.add("redisCacheManager");
+        cacheManager.setCacheNames(cacheNames);
+        return  cacheManager;
+    }
 
 
 

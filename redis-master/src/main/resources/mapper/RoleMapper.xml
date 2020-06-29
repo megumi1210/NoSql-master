@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--        对应要动态代理的接口-->
+<mapper namespace="org.example.dao.RoleMapper">
+
+    <resultMap id="baseMap" type="org.example.domain.Role">
+        <id property="id" column="id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="note" column="note"/>
+    </resultMap>
+
+  <insert id="insertRole" parameterType="org.example.domain.Role"
+            keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+       insert into t_role (role_name ,note )
+         values (#{roleName} ,#{note})
+  </insert>
+
+    <delete id="deleteRole"  parameterType="long">
+        delete from  t_role where id=#{id}
+    </delete>
+
+    <update id="updateRole" parameterType="org.example.domain.Role">
+        <!--set元素遇到逗号会自动去除逗号，使用这种做法可以避免更新全部字段-->
+         update t_role
+              <set>
+                  <if test="roleName!=null and roleName!=''">
+                       role_name =#{roleName},
+                  </if>
+                  <if test="note!=null and  note!=''">
+                      note=#{note}
+                  </if>
+              </set>
+               where id=#{id}
+    </update>
+
+    <select id="getRole" parameterType="long" resultMap="baseMap">
+        select id,role_name as roleName ,note from t_role where id=#{id}
+    </select>
+
+
+
+    <select id="findAll" resultMap="baseMap">
+        select * from t_role
+    </select>
+
+
+    <select id="findRoles" resultMap="baseMap">
+        select * from t_role
+       <where>
+       <if test="roleName !=null" >
+           role_name like concat('%',#{roleName},'%')
+       </if>
+
+         <if test="note !=null">
+             note like concat('%',#{note},'%')
+         </if>
+       </where>
+    </select>
+
+
+
+<!--    &lt;!&ndash;开启二级缓存&ndash;&gt;-->
+<!--    <cache/>-->
+
+
+</mapper>
