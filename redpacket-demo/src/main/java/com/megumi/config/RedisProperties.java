@@ -1,4 +1,4 @@
-package org.example.config;
+package com.megumi.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,26 +29,6 @@ public class RedisProperties {
     @Value("${spring.redis.maxWaitMills}")
     private String maxWaitMillis ;
 
-    @Value("${spring.redis.sentinel}")
-    private  String  sentinel;
-    @Value("${spring.redis.master}")
-    private  String master;
-
-    public String getMaster() {
-        return master;
-    }
-
-    public void setMaster(String master) {
-        this.master = master;
-    }
-
-    public String getSentinel() {
-        return sentinel;
-    }
-
-    public void setSentinel(String sentinel) {
-        this.sentinel = sentinel;
-    }
 
     public String getHostName() {
         return hostName;

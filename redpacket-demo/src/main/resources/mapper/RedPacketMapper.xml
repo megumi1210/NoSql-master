@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.megumi.dao.RedPacketDao">
+
+    <!-- 查询红包具体信息-->
+    <select id = "getRedPacked" parameterType="long" resultType="com.megumi.domain.RedPacket">
+         select id ,user_id as userId ,amount ,send_date as sendDate ,total ,
+         unit_amount as unitAmount ,stock ,version ,note from T_RED_PACKET where id = #{id}
+    </select>
+
+    <update id="decreaseRedPacket">
+          update T_RED_PACKET set stock = stock -1 where id = #{id}
+    </update>
+
+    <insert id="insertRedPacket"  parameterType="com.megumi.domain.RedPacket"
+                        useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+         insert into  t_red_packet(user_id, amount, send_date, total, unit_amount, stock, version, note)
+            VALUES(#{userId},#{amount},#{sendDate},#{total},#{unitAmount},#{stock},#{version},#{note})
+    </insert>
+
+    <select id="findAll" resultType="com.megumi.domain.RedPacket">
+        select id ,user_id as userId ,amount ,send_date as sendDate ,total ,
+               unit_amount as unitAmount ,stock ,version ,note from T_RED_PACKET
+    </select>
+
+</mapper>

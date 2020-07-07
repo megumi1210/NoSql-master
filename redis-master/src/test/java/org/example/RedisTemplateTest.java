@@ -293,4 +293,18 @@ public class RedisTemplateTest {
     // 打印结果
     System.out.println(result);
   }
+
+  @Test
+  public void test13(){
+    RedisTemplate redisTemplate = (RedisTemplate) ctx.getBean("clusterTemplate");
+    redisTemplate.execute(new SessionCallback() {
+      @Override
+      public Object execute(RedisOperations operations) throws DataAccessException {
+           operations.boundValueOps("key-cluster").set("value-cluster");
+           String value = (String) operations.boundValueOps("key-cluster").get();
+           System.out.println(value);
+           return  null;
+      }
+    });
+  }
 }
