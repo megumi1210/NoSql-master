@@ -185,8 +185,8 @@ public class SpringRedisConfig {
          List<RedisNode> nodes = new ArrayList<>();
 
          for(String url : urls){
-             String host = url.split(":")[0];
-             int port = Integer.parseInt(url.split(":")[1]);
+             String host = url.split(":")[0].trim();
+             int port = Integer.parseInt(url.split(":")[1].trim());
              nodes.add(new RedisNode(host,port));
          }
 
